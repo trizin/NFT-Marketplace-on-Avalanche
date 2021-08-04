@@ -1,10 +1,10 @@
-# How to create an NFT Marketplace on Avalanche
+# NFT Marketplace on Avalanche
 
 Step by step tutorial to build your own NFT marketplace on Avalanche using Hardhat and React.
 
 # Table of contents
 
-- [How to create an NFT Marketplace on Avalanche](#how-to-create-an-nft-marketplace-on-avalanche)
+- [NFT Marketplace on Avalanche](#nft-marketplace-on-avalanche)
 - [Table of contents](#table-of-contents)
 - [Generating files](#generating-files)
 - [Creating the NFT Token](#creating-the-nft-token)
@@ -61,11 +61,11 @@ Step by step tutorial to build your own NFT marketplace on Avalanche using Hardh
 Let's get started by setting up hardhat.
 
 - `npx hardhat init` -> choose sample project
-- Delete the files inside contracts
+- Delete the `Greeter.sol` file inside contracts
 
 # Creating the NFT Token
 
-First we need to create an NFT token which we will be displaying on our marketplace. Any NFT token can be sold in the marketplace.
+First, we need to create an NFT token that will be displayed in our marketplace.
 
 Let's start with a simple ERC-721 token.
 
@@ -81,7 +81,7 @@ contract NFT is ERC721 {
   constructor() ERC721("Super NFT", "SPRNFT") {}
 
   /**
-    Returns an random number
+    Returns a random number
   */
   function random() private view returns (uint) {
         return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, block.number)));
@@ -111,13 +111,13 @@ contract NFT is ERC721 {
 }
 ```
 
-> Note: Secure random-number generation in blockchain is a very difficult problem. Our method here is insecure, but since this is just an example, it will be good enough for our purposes.
+> Note: Secure random-number generation in the blockchain is a very difficult problem. Our method here is insecure, but since this is just an example, it will be good enough for our purposes.
 
 The logic here is very simple.
 
 - User calls the getItem() function and pays 0.5 AVAX
 - The value of the token is determined using a random number.
-- The token is minted to user.
+- The token is minted to the user.
 
 And that's all.
 
@@ -127,7 +127,7 @@ We will have two contracts, `AuctionManager` and `Auction` contracts. AuctionMan
 Here is how it will work:
 
 - The auction creator enters parameters for direct buy price, starting price, minimum bid increment, the token id, and the auction end time.
-- The auction creator gives allowance for the NFT that will be auctioned to the AuctionManager.
+- The auction creator gives approval for the NFT that will be auctioned to the AuctionManager.
 - The AuctionManager creates an Auction with the parameters given and then transfers the NFT to the newly created Auction contract.
 - After the auction is completed creator and the auction winner must call the withdrawal functions.
 
@@ -137,7 +137,7 @@ Let's begin with the `Auction` contract.
 
 ### Starting with the functions
 
-Our auction contract will allow users to place bids, cancel the auction if there are no bids and withdraw their tokens and funds after the auction has completed. We will also need a function to get the current state of auction.
+Our auction contract will allow users to place bids, cancel the auction if there are no bids and withdraw their tokens and funds after the auction has been completed. We will also need a function to get the current state of the auction.
 
 ```solidity
 contract Auction {
@@ -152,11 +152,11 @@ contract Auction {
 
 ### Events
 
-There will be 4 events in the contract.
+There will be four events in the contract.
 `NewBid` will be emitted each time there is a new bid.
 `WithdrawToken` will be emitted when the highest bidder withdraws the token.
 `WithdrawFunds` will be emitted when the auction owner withdraws the funds.
-`AuctionCancelled` will be emitted when auction gets cancelled.
+`AuctionCancelled` will be emitted when the auction gets canceled.
 
 ```solidity
 contract Auction {
@@ -171,20 +171,20 @@ contract Auction {
 
 We will need to store a few variables.
 
-- `endBlock` this is the endBlock of the auction. The auction will end if the current block is equal or greater than the `endBlock`.
-- `startBlock` The block number which marks the start of the auction.
+- `endBlock` is the end block of the auction. The auction will end if the current block is equal or greater than the `endBlock`.
+- `startBlock` is the block number that marks the start of the auction.
 - `maxBid` the amount of max bid.
-- `maxBidder` the address of the max bidder.
-- `creator` the address of the auction creator.
-- `bids` array of bids, we will use this to display recent bids on the webpage.
-- `tokenId` the id of the token that has been auctioned.
-- `isCancelled` this will be true if the auction has cancelled.
-- `isDirectBuy` this will be true if someone placed a bit with a higher or equal value than the direct buy price.
-- `minIncrement` The minimum increment for the bid.
-- `directBuyPrice` The price for a direct buy.
-- `startPrice` The starting price for the auction.
-- `nftAddress` The address of the NFT contract
-- `_nft` The NFT token.
+- `maxBidder` is the address of the max bidder.
+- `creator` is the address of the auction creator.
+- `bids` array of bids, we will use this to display recent bids on the web page.
+- `tokenId` is the id of the token that has been auctioned.
+- `isCancelled` will be true if the auction has been canceled.
+- `isDirectBuy` will be true if someone placed a bit with a higher or equal value than the direct buy price.
+- `minIncrement` is the minimum increment for the bid.
+- `directBuyPrice` is the price for a direct buy.
+- `startPrice` is the starting price for the auction.
+- `nftAddress` is the address of the NFT contract
+- `_nft` is the NFT token.
 
 ```solidity
 contract Auction {
@@ -217,7 +217,7 @@ contract Auction {
 ```
 
 We are using blocks instead of timestamps because block timestamps are being set by the miners and they are spoofable.
-Avarage Avalanche block time is about 10 seconds, you can check it [here](https://cchain.explorer.avax.network/). The auction will end when the current block is greater than or equal to the `endBlock`.
+The average Avalanche block time is about 10 seconds, and you can check it [here](https://cchain.explorer.avax.network/). The auction will end when the current block is greater than or equal to the `endBlock`.
 We will use this information to set the end date of the auction.
 
 ### Constructor function
@@ -244,9 +244,10 @@ constructor(address _creator,uint _endTime,uint _minIncrement,uint _directBuyPri
 #### Get the auction state
 
 Let's start with the `getAuctionState` function as we are going to use it in other functions.
-First, we need to check if the current block is greater than or equal to the `endBlock` and return `AuctionState.ENDED` if that's true.
-Then we need to check if the auction has been canceled and return `AuctionState.CANCELLED` if it is.
-Otherwise, we will return `AuctionState.CANCELLED`.
+First, we need to check if the auction has been canceled and return `AuctionState.CANCELLED` if it is.
+Then, we need to check if anyone bid more or equal to the direct buy price and return `AuctionState.DIRECT_BUY` if that's true.
+Then, we need to check if the current block is greater than or equal to the `endBlock` and return `AuctionState.ENDED` if that's true.
+Otherwise, we will return `AuctionState.OPEN`.
 
 ```solidity
 // Get the auction state
@@ -279,7 +280,7 @@ function placeBid() payable external returns(bool){
 }
 ```
 
-Next, we will set the new max bid and the max bidder. After that, we will store the value of the last highest bid and the bidder because we will need these information later.
+Next, we will set the new max bid and the max bidder. After that, we will store the value of the last highest bid and the bidder because we will need this information later.
 
 ```solidity
 address lastHightestBidder = maxBidder; // The address of the last highest bidder
@@ -288,7 +289,7 @@ maxBid = msg.value; // The new highest bid
 maxBidder = msg.sender; // The address of the new highest bidder
 ```
 
-Next, we have to check if the bid (`msg.value`) is greater or equal to the direct buy price. In that case, we will need to set the `isDirectBuy` to `true` thus end the auction.
+Next, we have to check if the bid (`msg.value`) is greater or equal to the direct buy price. In that case, we will need to set the `isDirectBuy` to `true`, thus end the auction.
 
 ```solidity
 if(msg.value >= directBuyPrice){ // If the bid is higher or equal to the direct buy price
@@ -302,7 +303,7 @@ Next, we have to push the value of the new bid into the bids array.
 bids.push(Bid(msg.sender,msg.value));
 ```
 
-and finally if there is a previous bid, we have to refund the previous highest bid to the previous bidder. Also we should emit a NewBid event.
+Finally, if there is a previous bid, we have to refund the previous highest bid to the previous bidder. Also, we should emit a NewBid event.
 
 ```solidity
 if(lastHighestBid != 0){ // if there is a bid
@@ -360,10 +361,10 @@ function cancelAuction() external returns(bool){ // Cancel the auction
 
 #### Withdraw Token
 
-After the auction has been completed, the highest bidder should be able to withdraw the nft token.
-The `msg.sender` must be the highest bidder and the auction must be completed by either direct buy or timeout, otherwise the function must revert. After that, The nft with the token id `tokenId` will be transferred to the highest bidder.
+After the auction has been completed, the highest bidder should be able to withdraw the NFT token.
+The `msg.sender` must be the highest bidder and the auction must be completed by either direct buy or timeout, otherwise the function must revert. After that, The NFT with the token id `tokenId` will be transferred to the highest bidder.
 
-We've set the max bidder initial value to auction creator, so if the auction times out and no one bids, auction creator will be able to withdraw the token.
+We've set the max bidder initial value to the auction creator's wallet address, so if the auction times out and no one bids, the auction creator will be able to withdraw the token.
 
 ```solidity
 // Withdraw the token after the auction is over
@@ -411,7 +412,7 @@ function allBids()
 }
 ```
 
-And that's all, our Auction contract is ready.
+And that's all. Our Auction contract is ready.
 [Auction Contract](contracts/Auction.sol)
 
 ## Auction Manager Contract
@@ -444,13 +445,13 @@ contract AuctionManager {
 }
 ```
 
-We will need two functions, one for creating an auction and the other one for getting a list of auctions. We will use the counter to assign an unique id for each auction so we can keep track of them.
+We will need two functions, one for creating an auction and the other one for getting a list of auctions. We will use the counter to assign a unique id for each auction so we can keep track of them.
 
 ### Building the functions
 
 #### Create auction
 
-This is a very straightforward function. We will create a new Auction contract using the parameters, and will assign an id to it.
+This is a very straightforward function. We will create a new Auction contract using the parameters and will assign an id to it.
 We also need to transfer the NFT token to the newly generated Auction contract.
 
 ```solidity
@@ -484,9 +485,7 @@ function getAuctions() external view returns(address[] memory _auctions) {
 }
 ```
 
-> The loop starts from 1 because when creating an auction we first increment the counter, so there is no auction with id zero.
-
-Then we can use this list of auctions to display them on the web page. We will need a function to obtain information about the auctions. Given an array of auction addresses we would like to get direct buy price, auction creator, starting price, highest bid, token id and end block.
+Then we can use this list of auctions to display them on the web page. We will need a function to obtain information about the auctions. Given an array of auction addresses we would like to get direct buy price, auction creator, starting price, highest bid, token id, auction state and end block.
 
 ```solidity
 // Return the information of each auction address
@@ -609,7 +608,7 @@ $ npx hardhat run scripts/deploy.js --network fuji
 
 Pretty simple! If this looks unfamiliar to you, you shall take a look at [hardhat guides](https://hardhat.org/guides/deploying.html).
 
-Do not forget note the addresses, as we will need them afterward to interact with the contracts.
+Do not forget to note the addresses, as we will need them afterward to interact with the contracts.
 ![deployed](images/deployed.png)
 
 # React App
@@ -641,8 +640,7 @@ Add bootstrap CDN in `public/index.html` file. We will use bootstrap to speed up
 </html>
 ```
 
-Let's start with a fresh `App.js` file, since there aren't any auctions yet, we need to create one first. However, before creating an auction, we need to mint an NFT.
-I've also assigned the contract addresses to constant strings.
+Let's start with a fresh `App.js` file. Start by importing `ethers` and assigning the contract addresses to constant strings. Since there aren't any auctions yet, we need to create one first. However, before creating an auction, we need to mint an NFT.
 
 ```js
 import React from "react";
@@ -800,7 +798,15 @@ Our form is ready! Let's see how we are going to interact with the contracts.
 We will use Contract Application Binary Interface (ABI) to interact with the contracts. It is the standard way to do it.
 You can find the `ABI` of compile contracts in `artifacts/contracts/ContractName/ContractName.json`
 Let's create a `frontend/src/artifacts` folder and move all those `json` files in there so we can reach them easier within the react code.
-Now let's import them.
+
+```console
+mkdir frontend/src/artifacts
+mv artifacts/contracts/Auction.sol/Auction.json frontend/src/artifacts/Auction.json
+mv artifacts/contracts/NFT.sol/NFT.json frontend/src/artifacts/NFT.json
+mv artifacts/contracts/AuctionManager.sol/AuctionManager.json frontend/src/artifacts/AuctionManager.json
+```
+
+Let's import them in the react code.
 
 ```js
 import AuctionArtifact from "./artifacts/Auction.json";
@@ -852,21 +858,18 @@ class App extends React.Component {
 }
 ```
 
-After adding these lines and refreshing the page, metamask should prompt you to connect your account.
+[See here to learn more about ethers](https://docs.ethers.io/v5/getting-started/)
+Let's refresh the page now, metamask should prompt you to connect your account.
 
 ![1](images/1.png)
 ![2](images/2.png)
 
 Choose your account and continue.
-Congrats! We have connected metamask into our website.
+Congrats! We have connected metamask to our website.
 
 ## Minting an NFT
 
 Let's build the mint function, which we will call when the `Mint NFT` button is pressed.
-
-```js
-mint(){}
-```
 
 We are going to use the `this.nft` object which we created inside the init function earlier.
 There is a function named `getItem()` inside our NFT contract. We have to call it and pass 0.5 AVAX to create an NFT.
@@ -885,7 +888,7 @@ async mint() {
 }
 ```
 
-And call this function when the button is pressed
+And call this function when the button is pressed.
 
 ```js
 <button type="button" onClick={() => this.mint()} class="btn btn-danger">
@@ -901,7 +904,7 @@ Confirm the transaction. After a few seconds the transaction should get mined.
 
 ![mined](images/done.png)
 
-Congrats! We have just minted ourselves an NFT token! I will mint myself two more, you can do as many as you want!
+Congrats! We have just minted ourselves an NFT token! I will mint myself two more. You can do as many as you want!
 
 ## Owned NFT's
 
@@ -964,65 +967,86 @@ Here they are! I can see all the NFT's I've minted.
 ## Creating an auction
 
 So far, so good! Let's build a function for creating auctions.
-Before calling the `createAuction` function in the auction manager, first, we have to give allowance for the token. Giving an allowance to the auction manager will let the auction manager transfer our token to the newly created auction contract.
+Before calling the `createAuction` function in the auction manager, first, we have to give approval for the token. Giving approval to the auction manager will let the auction manager transfer our token to the newly created auction contract.
 
 Here are the steps.
 
-- We call the approve function to approve the `AuctionManager` contract to transfer the NFT token that we are going to take on auction.
+- Check if there are any empty text fields.
+
+```js
+if (
+  !this.state.newAuction.minIncrement ||
+  !this.state.newAuction.directBuyPrice ||
+  !this.state.newAuction.startPrice ||
+  !this.state.newAuction.endBlock ||
+  !this.state.newAuction.tokenId
+)
+  return alert("Fill all the fields");
+```
+
+- We call the approve function to approve the `AuctionManager` contract to transfer the NFT token that we are going to take to the auction.
+
+```js
+let { hash: allowance_hash } = await this._nft.approve(
+  AUCTIONMANAGER_ADDRESS,
+  this.state.newAuction.tokenId
+); // Approve the AUCTIONMANAGER to transfer the token
+console.log("Approve Transaction sent! Hash:", allowance_hash);
+await this.provider.waitForTransaction(allowance_hash); // Wait till the transaction is mined
+console.log("Transaction mined!");
+```
+
 - Then, we will call the `createAuction` function in the `AuctionManager` contract.
 
 ```js
-async createAuction() {
-  if (
-    !this.state.newAuction.minIncrement ||
-    !this.state.newAuction.directBuyPrice ||
-    !this.state.newAuction.startPrice ||
-    !this.state.newAuction.endBlock ||
-    !this.state.newAuction.tokenId
-  )
-    return alert("Fill all the fields");
-
-  let { allowance_hash } = await this._nft.approve(
-    AUCTIONMANAGER_ADDRESS,
-    this.state.newAuction.tokenId
-  ); // Approve the AUCTIONMANAGER to transfer the token
-  console.log("Approve Transaction sent! Hash:", allowance_hash);
-  await this.provider.waitForTransaction(allowance_hash); // Wait till the transaction is mined
-  console.log("Transaction mined!");
-}
+let { hash } = await this._auctionManager.createAuction(
+  (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
+  ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
+  ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
+  ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
+  NFT_ADDRESS, // The address of the NFT token
+  this.state.newAuction.tokenId // The id of the token
+);
+console.log("Transaction sent! Hash:", hash);
+await this.provider.waitForTransaction(hash); // Wait till the transaction is mined
+console.log("Transaction mined!");
+alert(`Transaction sent! Hash: ${hash}`);
 ```
+
+Final function
 
 ```js
 async createAuction() {
-  if (
+    if (
       !this.state.newAuction.minIncrement ||
       !this.state.newAuction.directBuyPrice ||
       !this.state.newAuction.startPrice ||
       !this.state.newAuction.endBlock ||
       !this.state.newAuction.tokenId
-  )
-  return alert("Fill all the fields");
+    )
+      return alert("Fill all the fields");
 
-  let { allowance_hash } = await this._nft.approve(
-    AUCTIONMANAGER_ADDRESS,
-    this.state.newAuction.tokenId
-  ); // Approve the AUCTIONMANAGER to transfer the token
-  console.log("Approve Transaction sent! Hash:", allowance_hash);
-  await this.provider.waitForTransaction(allowance_hash); // Wait till the transaction is mined
-  console.log("Transaction mined!");
+    let { hash: allowance_hash } = await this._nft.approve(
+      AUCTIONMANAGER_ADDRESS,
+      this.state.newAuction.tokenId
+    ); // Approve the AUCTIONMANAGER to transfer the token
+    console.log("Approve Transaction sent! Hash:", allowance_hash);
+    await this.provider.waitForTransaction(allowance_hash); // Wait till the transaction is mined
+    console.log("Transaction mined!");
 
-  let { hash } = await this._auctionManager.createAuction(
-    (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
-    ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
-    ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
-    ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
-    NFT_ADDRESS, // The address of the NFT token
-    this.state.newAuction.tokenId // The id of the token
-  );
-  console.log("Transaction sent! Hash:", hash);
-  await this.provider.waitForTransaction(hash); // Wait till the transaction is mined
-  console.log("Transaction mined!");
-  alert(`Transaction sent! Hash: ${hash}`);
+    let { hash } = await this._auctionManager.createAuction(
+      // Create an auction
+      (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
+      ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
+      ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
+      ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
+      NFT_ADDRESS, // The address of the NFT token
+      this.state.newAuction.tokenId // The id of the token
+    );
+    console.log("Transaction sent! Hash:", hash);
+    await this.provider.waitForTransaction(hash); // Wait till the transaction is mined
+    console.log("Transaction mined!");
+    alert(`Transaction sent! Hash: ${hash}`);
 }
 ```
 
@@ -1043,8 +1067,8 @@ Now let's call this function when the `Create Auction` button is pressed.
 We are ready to start our first auction! Let's fill the form and press on `Create Auction` button.
 
 ![form](/images/form.png)
-//TODO CHANGE FOTO
-Approve the auction manager contract to transfer the NFT token with the id 2.
+
+Approve the auction manager contract to transfer the NFT token with ID 2.
 
 ![approvenft](/images/approvenft.png)
 
@@ -1071,7 +1095,7 @@ async getAuctions() {
 }
 ```
 
-We should call this function at the end of the `init()` function
+We should call this function at the end of the `init()` function.
 
 ```diff
   ...
@@ -1087,7 +1111,7 @@ Now let's take a look at the developer console logs.
 
 The numbers are again in big number format. We can convert the `tokenId` and `endBlock` using `.toNumber()` method; however, for the BigNumbers that represent a price, we should use `ethers.utils.formatEther` to get the exact value in AVAX.
 
-Let's finalise the auction array and display them in our auctions section of the web page.
+Let's organize the auction array and display them in the auctions section of the web page.
 
 ```js
 let new_auctions = [];
@@ -1191,6 +1215,7 @@ render() {
 ```
 
 Let's see the result!
+
 ![result](images/res.png)
 
 Awesome! There is the auction we've just created. Now let's build the auction page.
@@ -1219,7 +1244,7 @@ It will call the function when the button is pressed.
 ...
 ```
 
-We would like to display the previous bids for a specific auction, let's fetch that data when the `setActiveAuction` is called.
+We would like to display the previous bids for a specific auction. Let's fetch that data when the `setActiveAuction` is called.
 
 ```js
 async setActiveAuction(auction) {
@@ -1261,7 +1286,7 @@ let highestBidder = await this._auction.maxBidder(); // Get the highest bidder
 auction.highestBidder = highestBidder; // Add the highest bidder to the auction object
 ```
 
-Also, the complete function.
+The complete function.
 
 ```js
 async setActiveAuction(auction) {
@@ -1396,7 +1421,7 @@ Inside the `render` function
 ![renderAuction](/images/lookinggood.png)
 
 Now, we will have to make those buttons at the bottom functional.
-Let's build the function for each one.
+Let's write a function for each one!
 
 ## Auction Functions
 
@@ -1404,7 +1429,7 @@ Remember the `this._auction` object we've set inside the `setActiveAuction` func
 
 ### Placing Bids
 
-We will simply call the `placeBid` function and send some AVAX.
+We will simply call the `placeBid` function on the Auction contract and pass some AVAX.
 
 ```js
 async placeBid(amount) {
@@ -1446,7 +1471,7 @@ Now let's wait a bit until the auction is over, then we can withdraw our new tok
 
 ### Withdraw Token
 
-Calling the `withdrawToken` function of the Auction contract.
+Call the `withdrawToken` function of the Auction contract.
 
 ```js
 async withdrawToken() {
@@ -1474,13 +1499,13 @@ Approving the transaction...
 
 ![withdrawtransac](images/withdrawtransac.png)
 
-After the page refreshed, we can see that we got our new NFT!
+Refresh the page and we just got our new NFT!
 
 ![newnft](images/newnft.png)
 
 ### Withdraw Funds
 
-Calling the `withdrawFunds` function of the Auction contract.
+Call the `withdrawFunds` function of the Auction contract.
 
 ```js
 async withdrawFunds() {
@@ -1511,7 +1536,7 @@ Awesome! We have just sold an NFT and earned some AVAX.
 
 ### Cancel Auction
 
-Calling the `cancelAuction` function of the Auction contract.
+Call the `cancelAuction` function of the Auction contract.
 
 ```js
 async cancelAuction() {
@@ -1536,17 +1561,18 @@ We have to create a new auction to demonstrate this since we cannot cancel an au
 Create a new auction, click on the `Cancel Auction` button and confirm the transaction.
 
 After refreshing the page, we can see that the auction has been canceled.
+
 ![canceled](/images/canceled.png)
 
-We can also see that the token sent back to use after we've cancelled the auction.
+We can also see that the token was sent back to use after we've canceled the auction.
 
 ## Polishing the buttons
 
-We should hide the button if the button is not in function. For instance, the `Withdraw Funds` button is visible to all users; however, only the auction creator can call it when the auction is over. Thus, we must only make it visible if the auction is over, and the user is the auction creator.
+We should hide the button if the button is not in function. For instance, the `Withdraw Funds` button is visible to all users; however, only the auction creator can call it when the auction is over. Thus, we must only make it visible if the auction is over and the user is the auction creator.
 
 We will do some controls for each button and hide the button if the user is not able to call the function.
 
-Please note that our contract already blocks the other users from calling `Withdraw Funds` function. Someone can call any external function of a contract even if it's hidden on the web page. It is crucial to make the checks within the contract code.
+Please note that our contract already blocks the other users from calling `Withdraw Funds` function. Someone can call any external function of a contract, even if it's hidden on the web page. It is crucial to make the checks within the contract code.
 
 We will use some booleans to make this easier.
 
@@ -1685,7 +1711,7 @@ If this were an image or any attribute else instead of an integer, we would stil
 
 # Using With Other NFT Contracts
 
-Selling another NFT instead of creating a contract is possible. As you may have noticed, we have only used the `approve` and `transferFrom` functions to transfer the NFT to our Market Place contract. Those functions are a standard in ERC-721, so you can use this marketplace to sell almost any NFT token.
+Selling another NFT instead of creating a contract is possible. As you may have noticed, we have only used the `approve` and `transferFrom` functions to transfer the NFT to our Market Place contract. Those functions are a standard in ERC-721, so this marketplace is compatible with almost any NFT token.
 
 # Next Steps
 
@@ -1705,7 +1731,7 @@ Before deploying a contract to production, we should test every possible scenari
 - If the user sends more AVAX than the direct buy price, it does not get refunded.
   - Refund the extra AVAX if `msg.value` is greater than direct buy price.
 - The website won't work if the user does not connect a wallet or doesn't have one.
-  - To be able to call the view functions (get a list of auctions etc.) you can use a provider, [learn more about it here](https://docs.ethers.io/v4/api-providers.html)
+  - To be able to call the view functions (get a list of auctions etc.) you can use a `provider`, [learn more about it here](https://docs.ethers.io/v4/api-providers.html)
 - React App does not handle the error when a transaction fails.
   - When the transaction fails, maybe show a pop-up and tell the reason.
 - And more
