@@ -5,8 +5,8 @@ import AuctionArtifact from "./artifacts/Auction.json";
 import AuctionManagerArtifact from "./artifacts/AuctionManager.json";
 import NFTArtifact from "./artifacts/NFT.json";
 
-const NFT_ADDRESS = "0xeb2283672cf716fF6A1d880436D3a9074Ba94375";
-const AUCTIONMANAGER_ADDRESS = "0xea4b168866E439Db4A5183Dbcb4951DCb5437f1E";
+const NFT_ADDRESS = "0xeb2283672cf716fF6A1d880436D3a9074Ba94375"; // NFT contract address
+const AUCTIONMANAGER_ADDRESS = "0xea4b168866E439Db4A5183Dbcb4951DCb5437f1E"; // AuctionManager contract address
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -249,15 +249,19 @@ class App extends React.Component {
     let activeAuction = this.state.activeAuction;
     let state = "";
     if (activeAuction.auctionState === 0) {
+      // If the auction is open
       state = "Open";
     }
     if (activeAuction.auctionState === 1) {
+      // If the auction is cancelled
       state = "Cancelled";
     }
     if (activeAuction.auctionState === 2) {
+      // If the auction is ended
       state = "Ended";
     }
     if (activeAuction.auctionState === 3) {
+      // If the auction is ended by a direct buy
       state = "Direct Buy";
     }
     let isOwner =
@@ -329,7 +333,7 @@ class App extends React.Component {
                 onChange={(e) => this.setState({ bidAmount: e.target.value })}
               />
               <button
-                class="btn-primary"
+                class="btn-primary btn"
                 onClick={() => this.placeBid(this.state.bidAmount)}
               >
                 Place Pid
@@ -337,19 +341,25 @@ class App extends React.Component {
             </div>
           ) : null}
           {isOwner && isAuctionOpen && activeAuction.bids.length == 0 ? (
-            <button onClick={() => this.cancelAuction()} class="btn-danger">
+            <button onClick={() => this.cancelAuction()} class="btn-danger btn">
               Cancel Auction
             </button>
           ) : null}
 
           {isOwner && isAuctionEnded && activeAuction.bids.length > 0 ? (
-            <button onClick={() => this.withdrawFunds()} class="btn-secondary">
+            <button
+              onClick={() => this.withdrawFunds()}
+              class="btn-secondary btn"
+            >
               Withdraw Funds
             </button>
           ) : null}
           {((activeAuction.bids.length == 0 && isOwner) || isHighestBidder) &&
           isAuctionEnded ? (
-            <button onClick={() => this.withdrawToken()} class="btn-secondary">
+            <button
+              onClick={() => this.withdrawToken()}
+              class="btn-secondary btn"
+            >
               Withdraw Token
             </button>
           ) : null}
