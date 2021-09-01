@@ -4,8 +4,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 contract Auction {
     using SafeMath for uint256;
-    uint256 public endBlock; // The block number which marks the end of the auction
-    uint256 public startBlock; // The block number which marks the start of the auction
+    uint256 public endTime; // Timestamp of the end of the auction (in seconds)
+    uint256 public startTime; // The block timestamp which marks the start of the auction
     uint public maxBid; // The maximum bid
     address public maxBidder; // The address of the maximum bidder
     address public creator; // The address of the auction creator
@@ -19,7 +19,7 @@ contract Auction {
     address public nftAddress;  // The address of the NFT contract
     IERC721 _nft; // The NFT token
 
-    enum AuctionState {
+    enum AuctionState { 
         OPEN,
         CANCELLED,
         ENDED,
@@ -32,10 +32,10 @@ contract Auction {
     }
 
     // Auction constructor
-    constructor(address _creator,uint _endBlock,uint _minIncrement,uint _directBuyPrice, uint _startPrice,address _nftAddress,uint _tokenId){
+    constructor(address _creator,uint _endTime,uint _minIncrement,uint _directBuyPrice, uint _startPrice,address _nftAddress,uint _tokenId){
         creator = _creator; // The address of the auction creator
-        endBlock = block.number +  _endBlock; // The block number which marks the end of the auction
-        startBlock = block.number; // The block number which marks the start of the auction
+        endTime = block.timestamp +  _endTime; // The timestamp which marks the end of the auction (now + 30 days = 30 days from now)
+        startTime = block.timestamp; // The timestamp which marks the start of the auction
         minIncrement = _minIncrement; // The minimum increment for the bid
         directBuyPrice = _directBuyPrice; // The price for a direct buy
         startPrice = _startPrice; // The starting price for the auction
@@ -116,7 +116,7 @@ contract Auction {
     function getAuctionState() public view returns(AuctionState) {
         if(isCancelled) return AuctionState.CANCELLED; // If the auction is cancelled return CANCELLED
         if(isDirectBuy) return AuctionState.DIRECT_BUY; // If the auction is ended by a direct buy return DIRECT_BUY
-        if(block.number >= endBlock) return AuctionState.ENDED; // The auction is over if the block number is greater than the end block return ENDED
+        if(block.timestamp >= endTime) return AuctionState.ENDED; // The auction is over if the block timestamp is greater than the end timestamp, return ENDED
         return AuctionState.OPEN; // Otherwise return OPEN
     } 
 

@@ -5,8 +5,8 @@ import AuctionArtifact from "./artifacts/Auction.json";
 import AuctionManagerArtifact from "./artifacts/AuctionManager.json";
 import NFTArtifact from "./artifacts/NFT.json";
 
-const NFT_ADDRESS = "0xDB7222cD2Fe086A53A750c2c0a0242d1F16B8dd4";
-const AUCTIONMANAGER_ADDRESS = "0x682e093F60d170B00152A0e349B4dC90d329bEE1";
+const NFT_ADDRESS = "0xeb2283672cf716fF6A1d880436D3a9074Ba94375";
+const AUCTIONMANAGER_ADDRESS = "0xea4b168866E439Db4A5183Dbcb4951DCb5437f1E";
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -17,7 +17,7 @@ class App extends React.Component {
       newAuction: {
         // newAuction is a state variable for the form
         startPrice: null,
-        endBlock: null,
+        endTime: null,
         tokenId: null,
         minIncrement: null,
         directBuyPrice: null,
@@ -28,7 +28,6 @@ class App extends React.Component {
     this.mint = this.mint.bind(this);
 
     this.renderAuctionElement = this.renderAuctionElement.bind(this);
-    this.currentBlock = 0;
   }
 
   async getItems() {
@@ -55,7 +54,6 @@ class App extends React.Component {
         NFTArtifact.abi,
         this.signer
       ); // We will use this to interact with the NFT
-      this.currentBlock = await this.provider.getBlockNumber();
       this.getItems();
       this.getAuctions();
     } else {
@@ -72,8 +70,8 @@ class App extends React.Component {
     console.log(auctions);
     let new_auctions = [];
 
-    for (let i = 0; i < auctions.endBlock.length; i++) {
-      let endBlock = auctions.endBlock[i].toNumber();
+    for (let i = 0; i < auctions.endTime.length; i++) {
+      let endTime = auctions.endTime[i].toNumber();
       let tokenId = auctions.tokenIds[i].toNumber();
       let auctionState = auctions.auctionState[i].toNumber();
 
@@ -84,7 +82,7 @@ class App extends React.Component {
       let owner = auctions.owner[i];
 
       let newAuction = {
-        endBlock: endBlock,
+        endTime: endTime,
         startPrice: startPrice,
         owner: owner,
         directBuyPrice: directBuyPrice,
@@ -104,7 +102,7 @@ class App extends React.Component {
       !this.state.newAuction.minIncrement ||
       !this.state.newAuction.directBuyPrice ||
       !this.state.newAuction.startPrice ||
-      !this.state.newAuction.endBlock ||
+      !this.state.newAuction.endTime ||
       !this.state.newAuction.tokenId
     )
       return alert("Fill all the fields");
@@ -119,7 +117,7 @@ class App extends React.Component {
 
     let { hash } = await this._auctionManager.createAuction(
       // Create an auction
-      (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
+      this.state.newAuction.endTime * 60, // Converting minutes to seconds
       ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
       ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
       ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
@@ -129,7 +127,7 @@ class App extends React.Component {
     console.log("Transaction sent! Hash:", hash);
     await this.provider.waitForTransaction(hash); // Wait till the transaction is mined
     console.log("Transaction mined!");
-    alert(`Transaction sent! Hash: ${hash}`);
+    alert(`Transaction Mined! Hash: ${hash}`);
   }
 
   async mint() {
@@ -167,8 +165,9 @@ class App extends React.Component {
         <p>Starting Price: {auction.startPrice}</p> {/* Starting price */}
         <p>Owner: {auction.owner}</p> {/* Owner of the token */}
         <p>
+          {/* Convert timestamp to minutes */}
           End Time:{" "}
-          {Math.round(((auction.endBlock - this.currentBlock) * 10) / 60)}{" "}
+          {Math.round((auction.endTime * 1000 - Date.now()) / 1000 / 60)}{" "}
           {/* Time left in minutes */}
           minutes
         </p>
@@ -240,6 +239,9 @@ class App extends React.Component {
     let highestBidder = await this._auction.maxBidder(); // Get the highest bidder
     auction.highestBidder = highestBidder; // Add the highest bidder to the auction object
 
+    let minIncrement = await this._auction.minIncrement(); // Get the minimum increment
+    auction.minIncrement = ethers.utils.formatEther(minIncrement); // Add the minimum increment to the auction object
+
     this.setState({ activeAuction: auction }); // Update the state
   }
 
@@ -281,13 +283,15 @@ class App extends React.Component {
           {/* Highest bid */}
           <p>Direct Buy: {activeAuction.directBuyPrice} AVAX</p>{" "}
           {/* Direct buy price */}
+          <p>Minimum Increment: {activeAuction.minIncrement} AVAX</p>{" "}
+          {/* Minimum increment in AVAX */}
           <p>Starting Price: {activeAuction.startPrice} AVAX</p>{" "}
           {/* Starting price */}
           <p>Owner: {activeAuction.owner}</p> {/* Owner of the token */}
           <p>
             End Time:{" "}
             {Math.round(
-              ((activeAuction.endBlock - this.currentBlock) * 10) / 60
+              (activeAuction.endTime * 1000 - Date.now()) / 1000 / 60
             )}{" "}
             {/* Time left in minutes */}
             minutes
@@ -436,12 +440,12 @@ class App extends React.Component {
 
               <label class="form-label">Duration In Minutes</label>
               <input
-                value={this.state.newAuction.endBlock}
+                value={this.state.newAuction.endTime}
                 onChange={(e) =>
                   this.setState({
                     newAuction: {
                       ...this.state.newAuction,
-                      endBlock: e.target.value,
+                      endTime: e.target.value,
                     },
                   })
                 }

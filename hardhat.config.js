@@ -1,6 +1,6 @@
 require("@nomiclabs/hardhat-waffle");
 
-const PRIVATE_KEY = ""; // Your private key
+const PRIVATE_KEY = ""; // Your wallets private key
 
 module.exports = {
   solidity: {

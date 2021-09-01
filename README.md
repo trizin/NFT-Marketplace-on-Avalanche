@@ -58,7 +58,7 @@ Step by step tutorial to build your own NFT marketplace on Avalanche using Hardh
 
 # Generating files
 
-Let's get started by setting up hardhat.
+Let's get started by setting up [Hardhat](https://hardhat.org/).
 
 - `npx hardhat init` -> choose sample project
 - Delete the `Greeter.sol` file inside contracts
@@ -67,7 +67,7 @@ Let's get started by setting up hardhat.
 
 First, we need to create an NFT token that will be displayed in our marketplace.
 
-Let's start with a simple ERC-721 token.
+Let's create a simple ERC-721 token.
 
 [NFT.sol](contracts/NFT.sol)
 
@@ -171,8 +171,8 @@ contract Auction {
 
 We will need to store a few variables.
 
-- `endBlock` is the end block of the auction. The auction will end if the current block is equal or greater than the `endBlock`.
-- `startBlock` is the block number that marks the start of the auction.
+- `endTime` is the end timestamp of the auction. The auction will end if the current timestamp is equal or greater than the `endTime`.
+- `startTime` is the timestamp that marks the start of the auction.
 - `maxBid` the amount of max bid.
 - `maxBidder` is the address of the max bidder.
 - `creator` is the address of the auction creator.
@@ -188,8 +188,8 @@ We will need to store a few variables.
 
 ```solidity
 contract Auction {
-    uint256 public endBlock; // The block number which marks the end of the auction
-    uint256 public startBlock; // The block number which marks the start of the auction
+    uint256 public endTime; // Timestamp of the end of the auction (in seconds)
+    uint256 public startTime; // The block timestamp which marks the start of the auction
     uint maxBid; // The maximum bid
     address maxBidder; // The address of the maximum bidder
     address creator; // The address of the auction creator
@@ -216,19 +216,20 @@ contract Auction {
 }
 ```
 
-We are using blocks instead of timestamps because block timestamps are being set by the miners and they are spoofable.
-The average Avalanche block time is about 10 seconds, and you can check it [here](https://cchain.explorer.avax.network/). The auction will end when the current block is greater than or equal to the `endBlock`.
-We will use this information to set the end date of the auction.
+We would be using block numbers instead of timestamps. If we were developing this application on another chain such as Ethereum Mainnet, block timestamps are being set by the miners, and they are spoofable.
+However, in Avalanche, there is no set block rate; thus, we cannot rely on block numbers. We will be using `block.timestamp` to measure time. Timestamps are guaranteed to be within 30 seconds of real-time therefore we do not need to worry about it. [Read more about it here.](https://support.avax.network/en/articles/5106526-measuring-time-in-smart-contracts)
+
+The auction will end when the current timestamp is greater than or equal to the `endTime` which holds the timestamp the end of the auction.
 
 ### Constructor function
 
-We will need to get some parameters from the `MarketingManager` contract.
+We will need to get some parameters from the `AuctionManager` contract.
 
 ```solidity
 constructor(address _creator,uint _endTime,uint _minIncrement,uint _directBuyPrice, uint _startPrice,address _nftAddress,uint _tokenId){
     creator = _creator; // The address of the auction creator
-    endBlock = block.number +  _endTime; // The block number which marks the end of the auction
-    startBlock = block.number; // The block number which marks the start of the auction
+    endTime = block.timestamp +  _endTime; // The timestamp which marks the end of the auction (now + 30 days = 30 days from now)
+    startBlock = block.timestamp; // The timestamp which marks the start of the auction
     minIncrement = _minIncrement; // The minimum increment for the bid
     directBuyPrice = _directBuyPrice; // The price for a direct buy
     startPrice = _startPrice; // The starting price for the auction
@@ -245,8 +246,8 @@ constructor(address _creator,uint _endTime,uint _minIncrement,uint _directBuyPri
 
 Let's start with the `getAuctionState` function as we are going to use it in other functions.
 First, we need to check if the auction has been canceled and return `AuctionState.CANCELLED` if it is.
-Then, we need to check if anyone bid more or equal to the direct buy price and return `AuctionState.DIRECT_BUY` if that's true.
-Then, we need to check if the current block is greater than or equal to the `endBlock` and return `AuctionState.ENDED` if that's true.
+Then, we need to check if anyone bid more or equal to the direct buy price and return `AuctionState.DIRECT_BUY` in that case.
+Then, we need to check if the current timestamp is greater or equal to the `endTime` and return `AuctionState.ENDED` in that case.
 Otherwise, we will return `AuctionState.OPEN`.
 
 ```solidity
@@ -254,7 +255,7 @@ Otherwise, we will return `AuctionState.OPEN`.
 function getAuctionState() public view returns(AuctionState) {
     if(isCancelled) return AuctionState.CANCELLED; // If the auction is cancelled return CANCELLED
     if(isDirectBuy) return AuctionState.DIRECT_BUY; // If the auction is ended by a direct buy return DIRECT_BUY
-    if(block.number >= endBlock) return AuctionState.ENDED; // The auction is over if the block numberis greater than the end block return ENDED
+    if(block.timestamp >= endTime) return AuctionState.ENDED; // The auction is over if the block timestamp is greater than the end timestamp, return ENDED
     return AuctionState.OPEN; // Otherwise return OPEN
 }
 ```
@@ -430,7 +431,7 @@ contract AuctionManager {
     uint _auctionIdCounter; // auction Id counter
     mapping(uint => Auction) public auctions; // auctions
 
-    function createAuction(uint _endBlock, uint _minIncrement, uint _directBuyPrice,uint _startPrice,address _nftAddress,uint _tokenId) external returns (bool) {} // create an auction
+    function createAuction(uint _endTime, uint _minIncrement, uint _directBuyPrice,uint _startPrice,address _nftAddress,uint _tokenId) external returns (bool) {} // create an auction
     function getAuctions() external view returns(address[] memory _auctions) {} // Return a list of all auctions
     function getAuctionInfo(address[] calldata _auctionsList) external view
       returns (
@@ -438,7 +439,7 @@ contract AuctionManager {
             address[] memory owner,
             uint256[] memory highestBid,
             uint256[] memory tokenIds,
-            uint256[] memory endBlock,
+            uint256[] memory endTime,
             uint256[] memory startPrice,
             uint256[] memory auctionState
       ) {} // Return the information of each auction address
@@ -451,18 +452,47 @@ We will need two functions, one for creating an auction and the other one for ge
 
 #### Create auction
 
-This is a very straightforward function. We will create a new Auction contract using the parameters and will assign an id to it.
-We also need to transfer the NFT token to the newly generated Auction contract.
+This is a very straightforward function.
+
+First, we need to check that:
+
+- Direct buy price is greater than zero.
+- Start price is greater than the direct buy price.
+- End time is greater than 5 minutes, so no one will be able to create an auction that lasts few seconds. That wouldn't make sense.
+
+```solidity
+require(_directBuyPrice > 0); // direct buy price must be greater than 0
+require(_startPrice < _directBuyPrice); // start price is smaller than direct buy price
+require(_endTime > 5 minutes); // end time must be greater than 5 minutes (setting it to 5 minutes
+```
+
+Then, we will create a new Auction contract using the parameters and assign an id to it.
+
+```solidity
+uint auctionId = _auctionIdCounter; // get the current value of the counter
+_auctionIdCounter++; // increment the counter
+Auction auction = new Auction(msg.sender, _endTime, _minIncrement, _directBuyPrice, _startPrice, _nftAddress, _tokenId); // create the auction
+```
+
+Finally, we will transfer the NFT token to the newly generated Auction contract and update our auctions map.
+
+```solidity
+IERC721 _nftToken = IERC721(_nftAddress); // get the nft token
+_nftToken.transferFrom(msg.sender, address(auction), _tokenId); // transfer the token to the auction
+auctions[auctionId] = auction; // add the auction to the map
+return true;
+```
 
 ```solidity
 // create an auction
-function createAuction(uint _endBlock, uint _minIncrement, uint _directBuyPrice,uint _startPrice,address _nftAddress,uint _tokenId) external returns (bool){
+function createAuction(uint _endTime, uint _minIncrement, uint _directBuyPrice,uint _startPrice,address _nftAddress,uint _tokenId) external returns (bool){
     require(_directBuyPrice > 0); // direct buy price must be greater than 0
     require(_startPrice < _directBuyPrice); // start price is smaller than direct buy price
+    require(_endTime > 5 minutes); // end time must be greater than 5 minutes (setting it to 5 minutes for testing you can set it to 1 days or anything you would like)
 
     uint auctionId = _auctionIdCounter; // get the current value of the counter
     _auctionIdCounter++; // increment the counter
-    Auction auction = new Auction(msg.sender, _endBlock, _minIncrement, _directBuyPrice, _startPrice, _nftAddress, _tokenId); // create the auction
+    Auction auction = new Auction(msg.sender, _endTime, _minIncrement, _directBuyPrice, _startPrice, _nftAddress, _tokenId); // create the auction
     IERC721 _nftToken = IERC721(_nftAddress); // get the nft token
     _nftToken.transferFrom(msg.sender, address(auction), _tokenId); // transfer the token to the auction
     auctions[auctionId] = auction; // add the auction to the map
@@ -485,7 +515,7 @@ function getAuctions() external view returns(address[] memory _auctions) {
 }
 ```
 
-Then we can use this list of auctions to display them on the web page. We will need a function to obtain information about the auctions. Given an array of auction addresses we would like to get direct buy price, auction creator, starting price, highest bid, token id, auction state and end block.
+Then we can use this list of auctions to display them on the web page. We will need a function to obtain information about the auctions. Given an array of auction addresses we would like to get direct buy price, auction creator, starting price, highest bid, token id, auction state, and the end time.
 
 ```solidity
 // Return the information of each auction address
@@ -497,7 +527,7 @@ function getAuctionInfo(address[] calldata _auctionsList)
         address[] memory owner,
         uint256[] memory highestBid,
         uint256[] memory tokenIds,
-        uint256[] memory endBlock,
+        uint256[] memory endTime,
         uint256[] memory startPrice,
         uint256[] memory auctionState
     )
@@ -506,7 +536,7 @@ function getAuctionInfo(address[] calldata _auctionsList)
     owner = new address[](_auctionsList.length); // create an array of size equal to the length of the passed array
     highestBid = new uint256[](_auctionsList.length);
     tokenIds = new uint256[](_auctionsList.length);
-    endBlock = new uint256[](_auctionsList.length);
+    endTime = new uint256[](_auctionsList.length);
     startPrice = new uint256[](_auctionsList.length);
     auctionState = new uint256[](_auctionsList.length);
 
@@ -515,7 +545,7 @@ function getAuctionInfo(address[] calldata _auctionsList)
         owner[i] = Auction(auctions[i]).creator(); // get the owner of the auction
         highestBid[i] = Auction(auctions[i]).maxBid(); // get the highest bid
         tokenIds[i] = Auction(auctions[i]).tokenId(); // get the token id
-        endBlock[i] = Auction(auctions[i]).endBlock(); // get the end block
+        endTime[i] = Auction(auctions[i]).endTime(); // get the end time
         startPrice[i] = Auction(auctions[i]).startPrice(); // get the start price
         auctionState[i] = uint(Auction(auctions[i]).getAuctionState()); // get the auction state
     }
@@ -525,7 +555,7 @@ function getAuctionInfo(address[] calldata _auctionsList)
         owner,
         highestBid,
         tokenIds,
-        endBlock,
+        endTime,
         startPrice,
         auctionState
     );
@@ -599,7 +629,7 @@ main()
   });
 ```
 
-After you are done editing `deploy.js`, let's run it.
+After you are done editing `deploy.js`, let's run the script.
 
 ```console
 $ npx hardhat compile
@@ -655,7 +685,7 @@ class App extends React.Component {
       newAuction: {
         // newAuction is a state variable for the form
         startPrice: null,
-        endBlock: null,
+        endTime: null,
         tokenId: null,
         minIncrement: null,
         directBuyPrice: null,
@@ -763,12 +793,12 @@ We need to add few elements to our form. The user has to type in the start price
 
     <label class="form-label">Duration In Minutes</label>
     <input
-      value={this.state.newAuction.endBlock}
+      value={this.state.newAuction.endTime}
       onChange={(e) =>
         this.setState({
           newAuction: {
             ...this.state.newAuction,
-            endBlock: parseInt(e.target.value),
+            endTime: parseInt(e.target.value),
           },
         })
       }
@@ -825,7 +855,7 @@ class App extends React.Component {
 }
 ```
 
-We will use `ethers` to connect our metamask wallet and will call this function on `componentDidMount`.
+We will use (ethers)[https://docs.ethers.io/v5/] to connect our metamask wallet and call the `init` function on `componentDidMount`.
 
 ```js
 class App extends React.Component {
@@ -842,7 +872,7 @@ class App extends React.Component {
         this.signer
       );
 
-      this._nft = new ethers.Contract( // We will use this to interact with the NFT
+      this._nft = new ethers.Contract( // We will use this to interact with the NFT contract
         NFT_ADDRESS,
         NFTArtifact.abi,
         this.signer
@@ -857,6 +887,8 @@ class App extends React.Component {
   ...
 }
 ```
+
+Inside the init function we are creating instances of the signer, auction manager contract and our NFT contract. We will use them later.
 
 [See here to learn more about ethers](https://docs.ethers.io/v5/getting-started/)
 Let's refresh the page now, metamask should prompt you to connect your account.
@@ -978,7 +1010,7 @@ if (
   !this.state.newAuction.minIncrement ||
   !this.state.newAuction.directBuyPrice ||
   !this.state.newAuction.startPrice ||
-  !this.state.newAuction.endBlock ||
+  !this.state.newAuction.endTime ||
   !this.state.newAuction.tokenId
 )
   return alert("Fill all the fields");
@@ -1000,7 +1032,7 @@ console.log("Transaction mined!");
 
 ```js
 let { hash } = await this._auctionManager.createAuction(
-  (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
+  this.state.newAuction.endTime * 60, // Converting minutes to seconds
   ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
   ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
   ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
@@ -1021,7 +1053,7 @@ async createAuction() {
       !this.state.newAuction.minIncrement ||
       !this.state.newAuction.directBuyPrice ||
       !this.state.newAuction.startPrice ||
-      !this.state.newAuction.endBlock ||
+      !this.state.newAuction.endTime ||
       !this.state.newAuction.tokenId
     )
       return alert("Fill all the fields");
@@ -1035,8 +1067,8 @@ async createAuction() {
     console.log("Transaction mined!");
 
     let { hash } = await this._auctionManager.createAuction(
-      // Create an auction
-      (this.state.newAuction.endBlock / 10) * 60, // Converting minutes to blocks, avarage block time is 10 seconds
+      // Create an auction // TODO FIX
+      this.state.newAuction.endTime * 60, // Converting minutes to seconds
       ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
       ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
       ethers.utils.parseEther(this.state.newAuction.startPrice.toString()), // Start price in AVAX
@@ -1109,15 +1141,15 @@ Now let's take a look at the developer console logs.
 
 ![consolenumbers](/images/consolebig.png)
 
-The numbers are again in big number format. We can convert the `tokenId` and `endBlock` using `.toNumber()` method; however, for the BigNumbers that represent a price, we should use `ethers.utils.formatEther` to get the exact value in AVAX.
+The numbers are again in big number format. We can convert the `tokenId` and `endTime` using `.toNumber()` method; however, for the BigNumbers that represent a price, we should use `ethers.utils.formatEther` to get the exact value in AVAX.
 
 Let's organize the auction array and display them in the auctions section of the web page.
 
 ```js
 let new_auctions = [];
 
-for (let i = 0; i < auctions.endBlock.length; i++) {
-  let endBlock = auctions.endBlock[i].toNumber();
+for (let i = 0; i < auctions.endTime.length; i++) {
+  let endTime = auctions.endTime[i].toNumber();
   let tokenId = auctions.tokenIds[i].toNumber();
   let auctionState = auctions.auctionState[i].toNumber();
 
@@ -1128,7 +1160,7 @@ for (let i = 0; i < auctions.endBlock.length; i++) {
   let owner = auctions.owner[i];
 
   let newAuction = {
-    endBlock: endBlock,
+    endTime: endTime,
     startPrice: startPrice,
     owner: owner,
     directBuyPrice: directBuyPrice,
@@ -1168,8 +1200,8 @@ renderAuctionElement(auction) {
       <p>Direct Buy: {auction.directBuyPrice}</p> {/* Direct buy price */}
       <p>Starting Price: {auction.startPrice}</p> {/* Starting price */}
       <p>Owner: {auction.owner}</p> {/* Owner of the token */}
-      <p>
-        End Time: {Math.round(((auction.endBlock - this.currentBlock) * 10) / 60)}{" "}
+      <p> // TODO FIX ME
+        End Time: {Math.round((auction.endTime * 1000 - Date.now()) / 1000 / 60)}{" "}
         {/* Time left in minutes */}
         minutes
       </p>
@@ -1180,23 +1212,7 @@ renderAuctionElement(auction) {
 }
 ```
 
-We have substracted the current block number from the end block. You may have noticed that the `this.currentBlock` is not defined yet. Let's define it!
-Inside the `init()` function, add this line.
-
-```diff
-  this._nft = new ethers.Contract(
-        NFT_ADDRESS,
-        NFTArtifact.abi,
-        this.signer
-  ); // We will use this to interact with the NFT
-+ this.currentBlock = await this.provider.getBlockNumber();
-  this.getItems();
-  this.getAuctions();
-```
-
-Also, we need to bind the `renderAuctionElement` to access `this.currentBlock` .
-Inside the constructor method, add the following line:
-`this.renderAuctionElement = this.renderAuctionElement.bind(this);`
+We have converted the `auction.endTime`, which is in seconds, to milliseconds by multiplying by 1000. Then, we have subtracted the result from `Date.now()`, which is in milliseconds. After that, we divided the result by 1000 to convert it to seconds. Finally, we divided it by 60 to convert it to minutes.
 
 Next, we will map all the auctions into the function in our `render` method.
 
@@ -1286,6 +1302,13 @@ let highestBidder = await this._auction.maxBidder(); // Get the highest bidder
 auction.highestBidder = highestBidder; // Add the highest bidder to the auction object
 ```
 
+Lastly the minimum increment value.
+
+```js
+let minIncrement = await this._auction.minIncrement(); // Get the minimum increment
+auction.minIncrement = ethers.utils.formatEther(minIncrement); // Add the minimum increment to the auction object
+```
+
 The complete function.
 
 ```js
@@ -1316,6 +1339,9 @@ async setActiveAuction(auction) {
 
   let highestBidder = await this._auction.maxBidder(); // Get the highest bidder
   auction.highestBidder = highestBidder; // Add the highest bidder to the auction object
+
+  let minIncrement = await this._auction.minIncrement(); // Get the minimum increment
+  auction.minIncrement = ethers.utils.formatEther(minIncrement); // Add the minimum increment to the auction object
 
   this.setState({ activeAuction: auction }); // Update the state
 }
@@ -1355,13 +1381,17 @@ renderActiveAuction() {
         {/* Highest bid */}
         <p>Direct Buy: {activeAuction.directBuyPrice} AVAX</p>{" "}
         {/* Direct buy price */}
+        <p>Minimum Increment: {activeAuction.minIncrement} AVAX</p>{" "}
+        {/* Minimum increment in AVAX */}
         <p>Starting Price: {activeAuction.startPrice} AVAX</p> {/* Starting price */}
         <p>Owner: {activeAuction.owner}</p> {/* Owner of the token */}
         <p>
-          End Time:{" "}
-          {Math.round(((activeAuction.endBlock - this.currentBlock) * 10) / 60)}{" "}
-          {/* Time left in minutes */}
-          minutes
+            End Time:{" "}
+            {Math.round(
+              (activeAuction.endTime * 1000 - Date.now()) / 1000 / 60
+            )}{" "}
+            {/* Time left in minutes */}
+            minutes
         </p>
         <p>Auction State: {state}</p>
       </div>
