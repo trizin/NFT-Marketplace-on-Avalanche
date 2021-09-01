@@ -1067,7 +1067,7 @@ async createAuction() {
     console.log("Transaction mined!");
 
     let { hash } = await this._auctionManager.createAuction(
-      // Create an auction // TODO FIX
+      // Create an auction
       this.state.newAuction.endTime * 60, // Converting minutes to seconds
       ethers.utils.parseEther(this.state.newAuction.minIncrement.toString()), // Minimum increment in AVAX
       ethers.utils.parseEther(this.state.newAuction.directBuyPrice.toString()), // Direct buy price in AVAX
@@ -1200,7 +1200,7 @@ renderAuctionElement(auction) {
       <p>Direct Buy: {auction.directBuyPrice}</p> {/* Direct buy price */}
       <p>Starting Price: {auction.startPrice}</p> {/* Starting price */}
       <p>Owner: {auction.owner}</p> {/* Owner of the token */}
-      <p> // TODO FIX ME
+      <p>
         End Time: {Math.round((auction.endTime * 1000 - Date.now()) / 1000 / 60)}{" "}
         {/* Time left in minutes */}
         minutes
