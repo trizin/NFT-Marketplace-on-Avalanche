@@ -6,8 +6,12 @@ Step by step tutorial to build your own NFT marketplace on Avalanche using Hardh
 
 - [NFT Marketplace on Avalanche](#nft-marketplace-on-avalanche)
 - [Table of contents](#table-of-contents)
-- [Generating files](#generating-files)
-- [Creating the NFT Token](#creating-the-nft-token)
+- [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Requirements](#requirements)
+- [Getting Started](#getting-started)
+  - [Building the workspace](#building-the-workspace)
+  - [Creating the NFT Token](#creating-the-nft-token)
 - [Contracts for the marketplace](#contracts-for-the-marketplace)
   - [Auction Contract](#auction-contract)
     - [Starting with the functions](#starting-with-the-functions)
@@ -56,14 +60,40 @@ Step by step tutorial to build your own NFT marketplace on Avalanche using Hardh
 - [Deploying to the Avalanche Mainnet](#deploying-to-the-avalanche-mainnet)
 - [Conclusion](#conclusion)
 
-# Generating files
+# Introduction
 
-Let's get started by setting up [Hardhat](https://hardhat.org/).
+We will be using [React JS](https://reactjs.org) to build the frontend of our NFT Marketplace and we will use [Ethers JS](https://docs.ethers.io/v5/) to interact with the smart contracts on the frontend. For the backend, we will be using our smart contracts that will be deployed on the [Avalanche](https://www.avax.network/) chain and that's all. Our NFT Marketplace will live on the blockchain. Totally decentralized! We will be using Hardhat to compile and deploy our smart contracts.
+
+## Prerequisites
+
+- Basic knowledge of [React JS](https://reactjs.org/).
+  - React is a JavaScript library for building user interfaces. React makes it easier to create interactive UIs. The whole UI of the NFT Marketplace is just a single file. You may use anything you would like to build your UI (Angular, Vanilla JS, Vue.js). The important part is to know how to interact with the blockchain and our smart contracts.
+- Very basic knowledge of [Hardhat](https://hardhat.org/).
+  - Hardhat is a development environment to compile, deploy, test, and debug your solidity code. You may use [Truffle](https://www.trufflesuite.com/truffle) or any other framework that lets you deploy smart contracts as well. I do prefer using Hardhat.
+- Basic knowledge of [Ethers JS](https://docs.ethers.io/v5/) library.
+  - [Ethers JS](https://docs.ethers.io/v5/) is a javascript library for interacting with the blockchain and our smart contracts. Once you get familiar with it, you may use it to interact with the chain in any javascript project. You may also use [Web3 JS](https://web3js.readthedocs.io/en/v1.5.0/) if you are more familiar with it. I find it easier to work with Ethers.
+- Basic knowledge of [Solidity](https://docs.soliditylang.org/en/v0.8.6/#) language.
+  - We will be writing our smart contracts in **solidity**. A piece of basic knowledge is required for you to understand the concepts fully.
+
+## Requirements
+
+- [Node JS](https://nodejs.org/en) and [npm](https://www.npmjs.com/) must be installed.
+- [Hardhat](https://hardhat.org/) must be installed.
+- [Metamask](https://metamask.io) extension must be installed on your browser.
+- [create-react-app](https://www.npmjs.com/package/create-react-app) must be installed.
+
+# Getting Started
+
+## Building the workspace
+
+Let's get started by setting up our workspace using [Hardhat](https://hardhat.org/).
 
 - `npx hardhat init` -> choose sample project
 - Delete the `Greeter.sol` file inside contracts
 
-# Creating the NFT Token
+This will set up our initial workspace.
+
+## Creating the NFT Token
 
 First, we need to create an NFT token that will be displayed in our marketplace.
 
@@ -262,7 +292,7 @@ function getAuctionState() public view returns(AuctionState) {
 
 #### Placing bids
 
-Let's start building the place bid function.
+Let's start building the function for placing bids.
 The user calls the `placeBid` function and sends an amount of AVAX.
 
 Firstly, there are few things we need to check;
